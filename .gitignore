@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# HuggingFace model cache (large, re-downloads automatically)
+# Uncomment below if you want to exclude cached models:
+# ~/.cache/huggingface/
+
+# Flask
+instance/
+.webassets-cache
+
+# Environment variables
+.env
+.env.local
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Logs
+*.log
+server.log
+nohup.out
+
+# Test uploads (don't commit user photos)
+uploads/
+test_images/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
