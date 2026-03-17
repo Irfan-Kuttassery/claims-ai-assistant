@@ -151,12 +151,22 @@
       background: linear-gradient(135deg, rgba(247,196,79,0.15), rgba(247,196,79,0.05));
       border: 1px solid rgba(247,196,79,0.35);
     }
+    .verdict-card.fake {
+      background: linear-gradient(135deg, rgba(124,92,247,0.15), rgba(124,92,247,0.05));
+      border: 1px solid rgba(124,92,247,0.35);
+    }
+    .verdict-card.real {
+      background: linear-gradient(135deg, rgba(79,142,247,0.15), rgba(79,142,247,0.05));
+      border: 1px solid rgba(79,142,247,0.35);
+    }
     .verdict-icon { font-size: 52px; flex-shrink: 0; }
     .verdict-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px; }
     .verdict-title { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
     .verdict-card.damaged .verdict-title { color: var(--danger); }
     .verdict-card.undamaged .verdict-title { color: var(--success); }
     .verdict-card.uncertain .verdict-title { color: var(--warn); }
+    .verdict-card.fake .verdict-title { color: var(--accent2); }
+    .verdict-card.real .verdict-title { color: var(--accent); }
     .verdict-sub { font-size: 14px; color: var(--muted); }
 
     /* ── Score bars ── */
@@ -260,6 +270,16 @@
         <div class="verdict-label">Detection Result</div>
         <div class="verdict-title" id="verdict-title"></div>
         <div class="verdict-sub" id="verdict-sub"></div>
+      </div>
+    </div>
+
+    <!-- Authenticity -->
+    <div class="verdict-card" id="auth-card" style="display:none">
+      <div class="verdict-icon" id="auth-icon"></div>
+      <div>
+        <div class="verdict-label">AI Authenticity Result</div>
+        <div class="verdict-title" id="auth-title"></div>
+        <div class="verdict-sub" id="auth-sub"></div>
       </div>
     </div>
 
@@ -378,6 +398,35 @@
       vi.textContent = '✅';
       vt.textContent = 'NO DAMAGE DETECTED';
       vs.textContent = `CLIP: ${d.undamaged_score}% undamaged · AI confidence: ${d.confidence}%`;
+    }
+
+    // Authenticity
+    const authCard = document.getElementById('auth-card');
+    if (d.authenticity && d.authenticity !== 'skipped') {
+      authCard.style.display = 'flex';
+      const aiVerdict = d.authenticity.verdict;
+      const aiIcon = document.getElementById('auth-icon');
+      const aiTitle = document.getElementById('auth-title');
+      const aiSub = document.getElementById('auth-sub');
+      
+      if (aiVerdict === 'fake') {
+        authCard.className = 'verdict-card fake';
+        aiIcon.textContent = '🤖';
+        aiTitle.textContent = 'AI GENERATED / FRAUD SIGNAL';
+        aiSub.innerHTML = `Dedicated Model: ${d.authenticity.fake_score}% fake · <br><small>${d.authenticity.meta}</small>`;
+      } else if (aiVerdict === 'real') {
+        authCard.className = 'verdict-card real';
+        aiIcon.textContent = '📸';
+        aiTitle.textContent = 'REAL PHOTO';
+        aiSub.innerHTML = `Dedicated Model: ${d.authenticity.real_score}% real · <br><small>${d.authenticity.meta}</small>`;
+      } else {
+        authCard.className = 'verdict-card uncertain';
+        aiIcon.textContent = '🤔';
+        aiTitle.textContent = 'AUTHENTICITY UNCERTAIN';
+        aiSub.innerHTML = `Dedicated Model: ${d.authenticity.fake_score}% fake · <br><small>${d.authenticity.meta}</small>`;
+      }
+    } else {
+      authCard.style.display = 'none';
     }
 
     // Score bars
