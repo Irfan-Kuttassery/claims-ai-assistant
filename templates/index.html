@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FNOL FastTrack — AI Car Damage Detector</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
   <style>
     :root {
       --bg: #0a0c13;
       --surface: #12151f;
       --card: #1a1e2e;
-      --border: rgba(255,255,255,0.07);
+      --border: rgba(255, 255, 255, 0.07);
       --accent: #4f8ef7;
       --accent2: #7c5cf7;
       --danger: #f74f6a;
@@ -21,7 +23,13 @@
       --muted: #6b7280;
       --radius: 16px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       background: var(--bg);
@@ -31,34 +39,107 @@
     }
 
     /* ── Animated background blobs ── */
-    .bg-blobs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .bg-blobs {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
     .blob {
-      position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.25;
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.25;
       animation: drift 12s ease-in-out infinite alternate;
     }
-    .blob:nth-child(1) { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -200px; }
-    .blob:nth-child(2) { width: 500px; height: 500px; background: var(--accent2); bottom: -150px; right: -100px; animation-delay: -4s; }
-    .blob:nth-child(3) { width: 300px; height: 300px; background: var(--danger); top: 50%; left: 50%; animation-delay: -8s; }
-    @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(30px,20px) scale(1.08); } }
+
+    .blob:nth-child(1) {
+      width: 600px;
+      height: 600px;
+      background: var(--accent);
+      top: -200px;
+      left: -200px;
+    }
+
+    .blob:nth-child(2) {
+      width: 500px;
+      height: 500px;
+      background: var(--accent2);
+      bottom: -150px;
+      right: -100px;
+      animation-delay: -4s;
+    }
+
+    .blob:nth-child(3) {
+      width: 300px;
+      height: 300px;
+      background: var(--danger);
+      top: 50%;
+      left: 50%;
+      animation-delay: -8s;
+    }
+
+    @keyframes drift {
+      from {
+        transform: translate(0, 0) scale(1);
+      }
+
+      to {
+        transform: translate(30px, 20px) scale(1.08);
+      }
+    }
 
     /* ── Layout ── */
-    .wrapper { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 40px 20px; }
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
 
     /* ── Header ── */
-    header { text-align: center; margin-bottom: 48px; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(79,142,247,0.12); border: 1px solid rgba(79,142,247,0.3);
-      color: var(--accent); border-radius: 999px; padding: 6px 16px; font-size: 12px;
-      font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px;
+    header {
+      text-align: center;
+      margin-bottom: 48px;
     }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(79, 142, 247, 0.12);
+      border: 1px solid rgba(79, 142, 247, 0.3);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
     h1 {
-      font-size: clamp(28px, 5vw, 48px); font-weight: 800; line-height: 1.15;
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      line-height: 1.15;
       background: linear-gradient(135deg, #fff 30%, var(--accent));
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
       margin-bottom: 12px;
     }
-    header p { color: var(--muted); font-size: 15px; max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+    header p {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
 
     /* ── Upload zone ── */
     .upload-card {
@@ -72,399 +153,698 @@
       position: relative;
       overflow: hidden;
     }
-    .upload-card:hover, .upload-card.drag-over {
+
+    .upload-card:hover,
+    .upload-card.drag-over {
       border-color: var(--accent);
-      background: rgba(79,142,247,0.05);
+      background: rgba(79, 142, 247, 0.05);
     }
+
     .upload-card input[type="file"] {
-      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
     }
+
     .upload-icon {
-      font-size: 56px; margin-bottom: 16px;
-      filter: drop-shadow(0 0 20px rgba(79,142,247,0.5));
+      font-size: 56px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 20px rgba(79, 142, 247, 0.5));
       animation: float 3s ease-in-out infinite;
     }
-    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-    .upload-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
-    .upload-card p { color: var(--muted); font-size: 14px; }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-8px)
+      }
+    }
+
+    .upload-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .upload-card p {
+      color: var(--muted);
+      font-size: 14px;
+    }
 
     /* ── Preview ── */
-    #preview-section { display: none; margin-top: 28px; }
-    .preview-wrapper {
-      background: var(--card); border-radius: var(--radius);
-      overflow: hidden; border: 1px solid var(--border);
+    #preview-section {
+      display: none;
+      margin-top: 28px;
     }
+
+    .preview-wrapper {
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
     .preview-header {
-      padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       border-bottom: 1px solid var(--border);
     }
-    .preview-header span { font-size: 13px; color: var(--muted); }
+
+    .preview-header span {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
     .btn-clear {
-      background: rgba(247,79,106,0.15); border: 1px solid rgba(247,79,106,0.3);
-      color: var(--danger); border-radius: 8px; padding: 6px 14px; font-size: 12px;
-      cursor: pointer; font-family: inherit; font-weight: 600;
+      background: rgba(247, 79, 106, 0.15);
+      border: 1px solid rgba(247, 79, 106, 0.3);
+      color: var(--danger);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
       transition: background 0.2s;
     }
-    .btn-clear:hover { background: rgba(247,79,106,0.3); }
+
+    .btn-clear:hover {
+      background: rgba(247, 79, 106, 0.3);
+    }
+
     #img-preview {
-      width: 100%; max-height: 360px; object-fit: contain;
-      background: #0d0f18; display: block;
+      width: 100%;
+      max-height: 360px;
+      object-fit: contain;
+      background: #0d0f18;
+      display: block;
     }
+
     .btn-analyze {
-      width: 100%; margin-top: 20px; padding: 16px;
+      width: 100%;
+      margin-top: 20px;
+      padding: 16px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff; border: none; border-radius: 12px;
-      font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
       transition: opacity 0.2s, transform 0.2s;
-      box-shadow: 0 8px 32px rgba(79,142,247,0.3);
+      box-shadow: 0 8px 32px rgba(79, 142, 247, 0.3);
     }
-    .btn-analyze:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-analyze:active { transform: translateY(0); }
-    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-analyze:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-analyze:active {
+      transform: translateY(0);
+    }
+
+    .btn-analyze:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
 
     /* ── Loader ── */
     .spinner {
-      width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     /* ── Results ── */
-    #result-section { display: none; margin-top: 32px; animation: slideUp 0.4s ease; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    #result-section {
+      display: none;
+      margin-top: 32px;
+      animation: slideUp 0.4s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
     .verdict-card {
-      border-radius: var(--radius); padding: 28px 32px;
-      display: flex; align-items: center; gap: 24px;
-      margin-bottom: 24px; position: relative; overflow: hidden;
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
     }
+
     .verdict-card.damaged {
-      background: linear-gradient(135deg, rgba(247,79,106,0.15), rgba(247,79,106,0.05));
-      border: 1px solid rgba(247,79,106,0.35);
+      background: linear-gradient(135deg, rgba(247, 79, 106, 0.15), rgba(247, 79, 106, 0.05));
+      border: 1px solid rgba(247, 79, 106, 0.35);
     }
+
     .verdict-card.undamaged {
-      background: linear-gradient(135deg, rgba(79,247,154,0.15), rgba(79,247,154,0.05));
-      border: 1px solid rgba(79,247,154,0.35);
+      background: linear-gradient(135deg, rgba(79, 247, 154, 0.15), rgba(79, 247, 154, 0.05));
+      border: 1px solid rgba(79, 247, 154, 0.35);
     }
+
     .verdict-card.uncertain {
-      background: linear-gradient(135deg, rgba(247,196,79,0.15), rgba(247,196,79,0.05));
-      border: 1px solid rgba(247,196,79,0.35);
+      background: linear-gradient(135deg, rgba(247, 196, 79, 0.15), rgba(247, 196, 79, 0.05));
+      border: 1px solid rgba(247, 196, 79, 0.35);
     }
+
     .verdict-card.fake {
-      background: linear-gradient(135deg, rgba(124,92,247,0.15), rgba(124,92,247,0.05));
-      border: 1px solid rgba(124,92,247,0.35);
+      background: linear-gradient(135deg, rgba(124, 92, 247, 0.15), rgba(124, 92, 247, 0.05));
+      border: 1px solid rgba(124, 92, 247, 0.35);
     }
+
     .verdict-card.real {
-      background: linear-gradient(135deg, rgba(79,142,247,0.15), rgba(79,142,247,0.05));
-      border: 1px solid rgba(79,142,247,0.35);
+      background: linear-gradient(135deg, rgba(79, 142, 247, 0.15), rgba(79, 142, 247, 0.05));
+      border: 1px solid rgba(79, 142, 247, 0.35);
     }
-    .verdict-icon { font-size: 52px; flex-shrink: 0; }
-    .verdict-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px; }
-    .verdict-title { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
-    .verdict-card.damaged .verdict-title { color: var(--danger); }
-    .verdict-card.undamaged .verdict-title { color: var(--success); }
-    .verdict-card.uncertain .verdict-title { color: var(--warn); }
-    .verdict-card.fake .verdict-title { color: var(--accent2); }
-    .verdict-card.real .verdict-title { color: var(--accent); }
-    .verdict-sub { font-size: 14px; color: var(--muted); }
+
+    .verdict-icon {
+      font-size: 52px;
+      flex-shrink: 0;
+    }
+
+    .verdict-label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.7;
+      margin-bottom: 4px;
+    }
+
+    .verdict-title {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .verdict-card.damaged .verdict-title {
+      color: var(--danger);
+    }
+
+    .verdict-card.undamaged .verdict-title {
+      color: var(--success);
+    }
+
+    .verdict-card.uncertain .verdict-title {
+      color: var(--warn);
+    }
+
+    .verdict-card.fake .verdict-title {
+      color: var(--accent2);
+    }
+
+    .verdict-card.real .verdict-title {
+      color: var(--accent);
+    }
+
+    .verdict-sub {
+      font-size: 14px;
+      color: var(--muted);
+    }
 
     /* ── Score bars ── */
-    .scores-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
-    .score-card {
-      background: var(--card); border-radius: 12px;
-      padding: 18px 20px; border: 1px solid var(--border);
+    .scores-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px;
     }
-    .score-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 12px; }
-    .score-value { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
-    .score-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
-    .score-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(.4,0,.2,1); }
-    .score-card.damaged-card .score-value { color: var(--danger); }
-    .score-card.damaged-card .score-fill { background: linear-gradient(90deg, var(--danger), #ff8fa3); }
-    .score-card.safe-card .score-value { color: var(--success); }
-    .score-card.safe-card .score-fill { background: linear-gradient(90deg, var(--success), #aaffe0); }
+
+    .score-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+    }
+
+    .score-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .score-value {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .score-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 1s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    .score-card.damaged-card .score-value {
+      color: var(--danger);
+    }
+
+    .score-card.damaged-card .score-fill {
+      background: linear-gradient(90deg, var(--danger), #ff8fa3);
+    }
+
+    .score-card.safe-card .score-value {
+      color: var(--success);
+    }
+
+    .score-card.safe-card .score-fill {
+      background: linear-gradient(90deg, var(--success), #aaffe0);
+    }
 
     /* ── Damage type table ── */
-    .damage-types { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
-    .damage-types-header {
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
-      font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+    .damage-types {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
     }
+
+    .damage-types-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .damage-row {
       padding: 14px 20px;
-      display: flex; align-items: center; gap: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
       border-bottom: 1px solid var(--border);
       transition: background 0.2s;
     }
-    .damage-row:last-child { border-bottom: none; }
-    .damage-row:hover { background: rgba(255,255,255,0.03); }
-    .damage-emoji { font-size: 22px; }
-    .damage-name { flex: 1; font-weight: 600; font-size: 14px; }
-    .damage-bar-wrap { flex: 2; }
-    .damage-bar-bg { height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
-    .damage-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 1s ease; }
-    .damage-pct { font-size: 13px; font-weight: 700; color: var(--accent); min-width: 44px; text-align: right; }
-    .severity-badge {
-      font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
-      text-transform: uppercase; letter-spacing: 0.5px;
+
+    .damage-row:last-child {
+      border-bottom: none;
     }
-    .sev-minor { background: rgba(247,196,79,0.15); color: var(--warn); }
-    .sev-moderate { background: rgba(247,79,106,0.15); color: var(--danger); }
-    .sev-severe { background: rgba(247,79,106,0.3); color: #ff4060; }
+
+    .damage-row:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .damage-emoji {
+      font-size: 22px;
+    }
+
+    .damage-name {
+      flex: 1;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .damage-bar-wrap {
+      flex: 2;
+    }
+
+    .damage-bar-bg {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .damage-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 1s ease;
+    }
+
+    .damage-pct {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 44px;
+      text-align: right;
+    }
+
+    .severity-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .sev-minor {
+      background: rgba(247, 196, 79, 0.15);
+      color: var(--warn);
+    }
+
+    .sev-moderate {
+      background: rgba(247, 79, 106, 0.15);
+      color: var(--danger);
+    }
+
+    .sev-severe {
+      background: rgba(247, 79, 106, 0.3);
+      color: #ff4060;
+    }
 
     /* ── Footer ── */
-    footer { text-align: center; margin-top: 56px; color: var(--muted); font-size: 13px; }
+    footer {
+      text-align: center;
+      margin-top: 56px;
+      color: var(--muted);
+      font-size: 13px;
+    }
 
     @media (max-width: 560px) {
-      .scores-grid { grid-template-columns: 1fr; }
-      .verdict-card { flex-direction: column; text-align: center; }
+      .scores-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .verdict-card {
+        flex-direction: column;
+        text-align: center;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<div class="bg-blobs">
-  <div class="blob"></div>
-  <div class="blob"></div>
-  <div class="blob"></div>
-</div>
-
-<div class="wrapper">
-
-  <!-- Header -->
-  <header>
-    <div class="badge">🚗 FNOL FastTrack · Step 1</div>
-    <h1>AI Car Damage<br>Detector</h1>
-    <p>Upload a car photo and our AI will instantly tell you whether the vehicle is damaged — powered by CLIP + fine-tuned vision models.</p>
-  </header>
-
-  <!-- Upload -->
-  <div class="upload-card" id="drop-zone">
-    <input type="file" id="file-input" accept="image/*" />
-    <div class="upload-icon">🖼️</div>
-    <h3>Drop your car photo here</h3>
-    <p>or click to browse · JPG, PNG, WEBP supported</p>
+  <div class="bg-blobs">
+    <div class="blob"></div>
+    <div class="blob"></div>
+    <div class="blob"></div>
   </div>
 
-  <!-- Preview -->
-  <div id="preview-section">
-    <div class="preview-wrapper">
-      <div class="preview-header">
-        <span id="file-name">image.jpg</span>
-        <button class="btn-clear" id="btn-clear">✕ Remove</button>
-      </div>
-      <img id="img-preview" src="" alt="Preview" />
-    </div>
-    <button class="btn-analyze" id="btn-analyze">
-      <span>🔍</span> <span id="btn-text">Analyze Damage</span>
-    </button>
-  </div>
+  <div class="wrapper">
 
-  <!-- Results -->
-  <div id="result-section">
+    <!-- Header -->
+    <header>
+      <div class="badge">🚗 FNOL FastTrack · Step 1</div>
+      <h1>AI Car Damage<br>Detector</h1>
+      <p>Upload a car photo and our AI will instantly tell you whether the vehicle is damaged — powered by CLIP +
+        fine-tuned vision models.</p>
+    </header>
 
-    <!-- Verdict -->
-    <div class="verdict-card" id="verdict-card">
-      <div class="verdict-icon" id="verdict-icon"></div>
-      <div>
-        <div class="verdict-label">Detection Result</div>
-        <div class="verdict-title" id="verdict-title"></div>
-        <div class="verdict-sub" id="verdict-sub"></div>
-      </div>
+    <!-- Upload -->
+    <div class="upload-card" id="drop-zone">
+      <input type="file" id="file-input" accept="image/*" />
+      <div class="upload-icon">🖼️</div>
+      <h3>Drop your car photo here</h3>
+      <p>or click to browse · JPG, PNG, WEBP supported</p>
     </div>
 
-    <!-- Authenticity -->
-    <div class="verdict-card" id="auth-card" style="display:none">
-      <div class="verdict-icon" id="auth-icon"></div>
-      <div>
-        <div class="verdict-label">AI Authenticity Result</div>
-        <div class="verdict-title" id="auth-title"></div>
-        <div class="verdict-sub" id="auth-sub"></div>
-      </div>
-    </div>
-
-    <!-- Scores -->
-    <div class="scores-grid">
-      <div class="score-card damaged-card">
-        <div class="score-label">🔴 Damaged Probability</div>
-        <div class="score-value" id="dam-pct">—</div>
-        <div class="score-bar"><div class="score-fill" id="dam-bar" style="width:0%"></div></div>
-      </div>
-      <div class="score-card safe-card">
-        <div class="score-label">🟢 Undamaged Probability</div>
-        <div class="score-value" id="undam-pct">—</div>
-        <div class="score-bar"><div class="score-fill" id="undam-bar" style="width:0%"></div></div>
-      </div>
-    </div>
-
-    <!-- Damage types (shown only when damaged) -->
-    <div class="damage-types" id="damage-types-card" style="display:none">
-      <div class="damage-types-header">⚠️ Damage Type Breakdown</div>
-      <div id="damage-types-list"></div>
-    </div>
-
-  </div>
-
-  <footer>FNOL FastTrack &nbsp;·&nbsp; Phase 1: Damage Detection &nbsp;·&nbsp; Powered by CLIP + HF Transformers</footer>
-</div>
-
-<script>
-  const fileInput  = document.getElementById('file-input');
-  const dropZone   = document.getElementById('drop-zone');
-  const preview    = document.getElementById('preview-section');
-  const imgPrev    = document.getElementById('img-preview');
-  const fileName   = document.getElementById('file-name');
-  const btnClear   = document.getElementById('btn-clear');
-  const btnAnalyze = document.getElementById('btn-analyze');
-  const resultSec  = document.getElementById('result-section');
-
-  let currentFile = null;
-
-  // ── Drag & Drop ──
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault(); dropZone.classList.remove('drag-over');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('image/')) loadFile(f);
-  });
-  fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
-
-  function loadFile(file) {
-    currentFile = file;
-    fileName.textContent = file.name;
-    const reader = new FileReader();
-    reader.onload = ev => { imgPrev.src = ev.target.result; };
-    reader.readAsDataURL(file);
-    preview.style.display = 'block';
-    resultSec.style.display = 'none';
-    dropZone.style.display = 'none';
-  }
-
-  btnClear.addEventListener('click', () => {
-    currentFile = null;
-    preview.style.display = 'none';
-    resultSec.style.display = 'none';
-    dropZone.style.display = 'block';
-    fileInput.value = '';
-  });
-
-  // ── Analyze ──
-  btnAnalyze.addEventListener('click', async () => {
-    if (!currentFile) return;
-    btnAnalyze.disabled = true;
-    btnAnalyze.innerHTML = '<div class="spinner"></div><span>Analyzing…</span>';
-
-    const form = new FormData();
-    form.append('image', currentFile);
-
-    try {
-      const res  = await fetch('/analyze', { method: 'POST', body: form });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      showResult(data);
-    } catch (err) {
-      alert('Error: ' + err.message);
-    } finally {
-      btnAnalyze.disabled = false;
-      btnAnalyze.innerHTML = '<span>🔍</span><span>Analyze Again</span>';
-    }
-  });
-
-  // ── Render results ──
-  function showResult(d) {
-    resultSec.style.display = 'block';
-    resultSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    const vc = document.getElementById('verdict-card');
-    const vi = document.getElementById('verdict-icon');
-    const vt = document.getElementById('verdict-title');
-    const vs = document.getElementById('verdict-sub');
-
-    const verdict = d.verdict || (d.is_damaged ? 'damaged' : 'undamaged');
-
-    if (verdict === 'damaged') {
-      vc.className = 'verdict-card damaged';
-      vi.textContent = '🚨';
-      vt.textContent = 'DAMAGED';
-      vs.textContent = `CLIP: ${d.damaged_score}% damage · Damage-type model top: ${d.top_dmg_score}%`;
-    } else if (verdict === 'uncertain') {
-      vc.className = 'verdict-card uncertain';
-      vi.textContent = '⚠️';
-      vt.textContent = 'UNCERTAIN';
-      vs.textContent = `CLIP scores are close (${d.damaged_score}% vs ${d.undamaged_score}%) — please provide a clearer photo`;
-    } else {
-      vc.className = 'verdict-card undamaged';
-      vi.textContent = '✅';
-      vt.textContent = 'NO DAMAGE DETECTED';
-      vs.textContent = `CLIP: ${d.undamaged_score}% undamaged · AI confidence: ${d.confidence}%`;
-    }
-
-    // Authenticity
-    const authCard = document.getElementById('auth-card');
-    if (d.authenticity && d.authenticity !== 'skipped') {
-      authCard.style.display = 'flex';
-      const aiVerdict = d.authenticity.verdict;
-      const aiIcon = document.getElementById('auth-icon');
-      const aiTitle = document.getElementById('auth-title');
-      const aiSub = document.getElementById('auth-sub');
-      
-      if (aiVerdict === 'fake') {
-        authCard.className = 'verdict-card fake';
-        aiIcon.textContent = '🤖';
-        aiTitle.textContent = 'AI GENERATED / FRAUD SIGNAL';
-        aiSub.innerHTML = `Dedicated Model: ${d.authenticity.fake_score}% fake · <br><small>${d.authenticity.meta}</small>`;
-      } else if (aiVerdict === 'real') {
-        authCard.className = 'verdict-card real';
-        aiIcon.textContent = '📸';
-        aiTitle.textContent = 'REAL PHOTO';
-        aiSub.innerHTML = `Dedicated Model: ${d.authenticity.real_score}% real · <br><small>${d.authenticity.meta}</small>`;
-      } else {
-        authCard.className = 'verdict-card uncertain';
-        aiIcon.textContent = '🤔';
-        aiTitle.textContent = 'AUTHENTICITY UNCERTAIN';
-        aiSub.innerHTML = `Dedicated Model: ${d.authenticity.fake_score}% fake · <br><small>${d.authenticity.meta}</small>`;
-      }
-    } else {
-      authCard.style.display = 'none';
-    }
-
-    // Score bars
-    document.getElementById('dam-pct').textContent   = d.damaged_score + '%';
-    document.getElementById('undam-pct').textContent = d.undamaged_score + '%';
-    setTimeout(() => {
-      document.getElementById('dam-bar').style.width   = d.damaged_score + '%';
-      document.getElementById('undam-bar').style.width = d.undamaged_score + '%';
-    }, 100);
-
-    // Damage type breakdown (only when damaged)
-    const dtCard = document.getElementById('damage-types-card');
-    const dtList = document.getElementById('damage-types-list');
-    if (verdict === 'damaged' && d.damage_types && d.damage_types.length > 0) {
-      dtCard.style.display = 'block';
-      dtList.innerHTML = d.damage_types.map(t => `
-        <div class="damage-row">
-          <span class="damage-emoji">${t.icon}</span>
-          <span class="damage-name">${t.label}</span>
-          <div class="damage-bar-wrap">
-            <div class="damage-bar-bg">
-              <div class="damage-bar-fill" style="width:0%" data-width="${t.score}"></div>
-            </div>
-          </div>
-          <span class="damage-pct">${t.score}%</span>
-          <span class="severity-badge sev-${t.severity}">${t.severity}</span>
+    <!-- Preview -->
+    <div id="preview-section">
+      <div class="preview-wrapper">
+        <div class="preview-header">
+          <span id="file-name">image.jpg</span>
+          <button class="btn-clear" id="btn-clear">✕ Remove</button>
         </div>
-      `).join('');
-      setTimeout(() => {
-        document.querySelectorAll('.damage-bar-fill').forEach(el => {
-          el.style.width = el.dataset.width + '%';
-        });
-      }, 100);
-    } else {
-      dtCard.style.display = 'none';
+        <img id="img-preview" src="" alt="Preview" />
+      </div>
+      <button class="btn-analyze" id="btn-analyze">
+        <span>🔍</span> <span id="btn-text">Analyze Damage</span>
+      </button>
+    </div>
+
+    <!-- Results -->
+    <div id="result-section">
+
+      <!-- Verdict -->
+      <div class="verdict-card" id="verdict-card">
+        <div class="verdict-icon" id="verdict-icon"></div>
+        <div>
+          <div class="verdict-label">Detection Result</div>
+          <div class="verdict-title" id="verdict-title"></div>
+          <div class="verdict-sub" id="verdict-sub"></div>
+        </div>
+      </div>
+
+      <!-- Authenticity -->
+      <div class="verdict-card" id="auth-card" style="display:none">
+        <div class="verdict-icon" id="auth-icon"></div>
+        <div>
+          <div class="verdict-label">AI Authenticity Result</div>
+          <div class="verdict-title" id="auth-title"></div>
+          <div class="verdict-sub" id="auth-sub"></div>
+        </div>
+      </div>
+
+      <!-- Scores -->
+      <div class="scores-grid">
+        <div class="score-card damaged-card">
+          <div class="score-label">🔴 Damaged Probability</div>
+          <div class="score-value" id="dam-pct">—</div>
+          <div class="score-bar">
+            <div class="score-fill" id="dam-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="score-card ai-card">
+          <div class="score-label">🤖 AI Content Probability</div>
+          <div class="score-value" id="ai-pct">—</div>
+          <div class="score-bar">
+            <div class="score-fill" id="ai-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Damage types (shown only when damaged) -->
+      <div class="damage-types" id="damage-types-card" style="display:none">
+        <div class="damage-types-header">⚠️ Damage Type Breakdown</div>
+        <div id="damage-types-list"></div>
+      </div>
+
+    </div>
+
+    <footer>FNOL FastTrack &nbsp;·&nbsp; Phase 1: Damage Detection &nbsp;·&nbsp; Powered by CLIP + HF Transformers
+    </footer>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const preview = document.getElementById('preview-section');
+    const imgPrev = document.getElementById('img-preview');
+    const fileName = document.getElementById('file-name');
+    const btnClear = document.getElementById('btn-clear');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const resultSec = document.getElementById('result-section');
+
+    let currentFile = null;
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith('image/')) loadFile(f);
+    });
+
+    fileInput.addEventListener('change', e => {
+      if (e.target.files[0]) loadFile(e.target.files[0]);
+    });
+
+    function loadFile(file) {
+      currentFile = file;
+      fileName.textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = ev => { imgPrev.src = ev.target.result; };
+      reader.readAsDataURL(file);
+
+      preview.style.display = 'block';
+      resultSec.style.display = 'none';
+      dropZone.style.display = 'none';
     }
-  }
-</script>
+
+    btnClear.addEventListener('click', () => {
+      currentFile = null;
+      preview.style.display = 'none';
+      resultSec.style.display = 'none';
+      dropZone.style.display = 'block';
+      fileInput.value = '';
+    });
+
+    btnAnalyze.addEventListener('click', async () => {
+      if (!currentFile) return;
+
+      btnAnalyze.disabled = true;
+      btnAnalyze.innerHTML = '<div class="spinner"></div><span>Analyzing…</span>';
+
+      const form = new FormData();
+      form.append('image', currentFile);
+
+      try {
+        const res = await fetch('/analyze', { method: 'POST', body: form });
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        showResult(data);
+
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btnAnalyze.disabled = false;
+        btnAnalyze.innerHTML = '<span>🔍</span><span>Analyze Again</span>';
+      }
+    });
+
+    function showResult(d) {
+      resultSec.style.display = 'block';
+
+      const vc = document.getElementById('verdict-card');
+      const vi = document.getElementById('verdict-icon');
+      const vt = document.getElementById('verdict-title');
+      const vs = document.getElementById('verdict-sub');
+
+      const verdict = d.verdict || (d.is_damaged ? 'damaged' : 'undamaged');
+
+      if (verdict === 'damaged') {
+        vc.className = 'verdict-card damaged';
+        vi.textContent = '🚨';
+        vt.textContent = 'DAMAGED';
+        vs.textContent = `CLIP: ${d.damaged_score || 0}%`;
+      } else if (verdict === 'uncertain') {
+        vc.className = 'verdict-card uncertain';
+        vi.textContent = '⚠️';
+        vt.textContent = 'UNCERTAIN';
+        vs.textContent = `Scores are close`;
+      } else {
+        vc.className = 'verdict-card undamaged';
+        vi.textContent = '✅';
+        vt.textContent = 'NO DAMAGE DETECTED';
+        vs.textContent = `CLIP: ${d.undamaged_score || 0}%`;
+      }
+
+      // ✅ SAFE AUTHENTICITY BLOCK
+      const authCard = document.getElementById('auth-card');
+
+      if (d.authenticity) {
+        authCard.style.display = 'flex';
+
+        const aiVerdict = d.authenticity.verdict || "unknown";
+        const aiIcon = document.getElementById('auth-icon');
+        const aiTitle = document.getElementById('auth-title');
+        const aiSub = document.getElementById('auth-sub');
+
+        if (aiVerdict === 'fake') {
+          authCard.className = 'verdict-card fake';
+          aiIcon.textContent = '🤖';
+          aiTitle.textContent = 'AI GENERATED';
+        } else {
+          authCard.className = 'verdict-card real';
+          aiIcon.textContent = '📸';
+          aiTitle.textContent = 'REAL PHOTO';
+        }
+
+        // 🔥 SAFE ACCESS (NO CRASH)
+        const clipFake = d.authenticity.clip_fake ?? 0;
+        const clipReal = d.authenticity.clip_real ?? 0;
+        const deepFake = d.authenticity.deep_fake ?? 0;
+        const deepReal = d.authenticity.deep_real ?? 0;
+        const weightedFake = d.authenticity.weighted_fake ?? 0;
+        const weightedReal = d.authenticity.weighted_real ?? 0;
+        const meta = d.authenticity.meta ?? "";
+
+        const confidence = Math.max(weightedFake, weightedReal);
+
+        aiSub.innerHTML = `
+        🧠 CLIP Score: ${clipFake}% / ${clipReal}% <br>
+        ${d.authenticity.verified ? `🧠 Deepfake Pass: ${deepFake}% / ${deepReal}% <br>` : ''}
+        🏀 Weighted: ${weightedFake}% / ${weightedReal}% <br>
+           <b>Confidence:</b> ${confidence}%
+        <small>${meta}</small>
+      `;
+      } else {
+        authCard.style.display = 'none';
+      }
+
+      // Damage Breakdown
+      const dtl = document.getElementById('damage-types-list');
+      const dtc = document.getElementById('damage-types-card');
+
+      if (d.is_damaged && d.damage_types && d.damage_types.length > 0) {
+        dtc.style.display = 'block';
+        dtl.innerHTML = d.damage_types.map(t => `
+            <div class="damage-row">
+              <div class="damage-emoji">${t.icon}</div>
+              <div class="damage-name">${t.label} <span class="severity-badge sev-${t.severity}">${t.severity}</span></div>
+              <div class="damage-bar-wrap">
+                <div class="damage-bar-bg">
+                  <div class="damage-bar-fill" style="width: ${t.score}%"></div>
+                </div>
+              </div>
+              <div class="damage-pct">${t.score}%</div>
+            </div>
+          `).join('');
+
+        // Update verdict summary
+        vs.textContent = `Primary: ${d.damage_types[0].label} (${d.damage_types[0].score}%)`;
+      } else {
+        dtc.style.display = 'none';
+      }
+
+      // Scores
+      document.getElementById('dam-pct').textContent = (d.damaged_score || 0) + '%';
+      document.getElementById('ai-pct').textContent = (d.authenticity?.weighted_fake || 0) + '%';
+
+      setTimeout(() => {
+        document.getElementById('dam-bar').style.width = (d.damaged_score || 0) + '%';
+        document.getElementById('ai-bar').style.width = (d.authenticity?.weighted_fake || 0) + '%';
+      }, 100);
+    }
+  </script>
 
 </body>
+
 </html>
