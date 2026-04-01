@@ -21,6 +21,13 @@ damage_type_classifier = pipeline(
     device=-1,   # CPU; set to 0 for GPU
 )
 
+print("🧠 Loading AI-image detector...")
+ai_detector = pipeline(
+    "image-classification",
+    model="umm-maybe/AI-image-detector",
+    device=-1,
+)
+
 print("✅ Models loaded successfully!")
 
 # ──────────────────────────────────────────────
@@ -44,26 +51,9 @@ CLIP_TEXTS = [
 N_DAMAGED = 5
 
 # ──────────────────────────────────────────────
-# CLIP prompts for AI-generated image detection
+# Dedicated AI-Image Detection Thresholds
 # ──────────────────────────────────────────────
-AI_DETECTION_TEXTS = [
-    # REAL (indices 0-4)
-    "a real photograph taken by a camera showing a real car",
-    "an authentic photo of an actual car taken on a street or parking lot",
-    "a genuine camera photo of a real vehicle with natural lighting",
-    "a real car photo with authentic road environment in the background",
-    "a candid real-world photograph of a physical car",
-    # AI-GENERATED (indices 5-9)
-    "an AI-generated digital artwork of a car with perfect unrealistic rendering",
-    "a synthetic computer-generated image of a car created by artificial intelligence",
-    "a digitally generated car illustration with hyper-realistic AI rendering",
-    "an artificially created image of a car produced by a generative AI model",
-    "a fake AI-generated car photo with unnaturally perfect details and textures",
-]
-N_AI_REAL = 5  # first N_AI_REAL prompts = real
-
-# Threshold: if real_score >= this, call it REAL
-AI_REAL_THRESHOLD = 0.55
+AI_REAL_THRESHOLD = 0.50
 
 # Thresholds for ensemble decision
 CLIP_DAMAGED_MIN    = 0.60  # CLIP must say ≥60% damaged to call DAMAGED
@@ -94,18 +84,28 @@ def clip_classify(image: Image.Image):
 
 
 def detect_ai_image(image: Image.Image):
-    """Uses CLIP (already loaded) to detect if the image is AI-generated or a real photo."""
-    inputs = clip_processor(
-        text=AI_DETECTION_TEXTS, images=image, return_tensors="pt", padding=True
-    )
-    with torch.no_grad():
-        outputs = clip_model(**inputs)
-    probs = outputs.logits_per_image[0].softmax(dim=0).numpy()
-
-    real_score = float(probs[:N_AI_REAL].sum())
-    ai_score   = float(probs[N_AI_REAL:].sum())
-
+    """Uses a dedicated AI-detection pipeline to classify the image."""
+    # top_k=None ensures we get all labels (e.g., both 'artificial' and 'human')
+    results = ai_detector(image, top_k=None)
+    
+    ai_score = 0.0
+    real_score = 0.0
+    
+    for r in results:
+        label = r["label"].lower()
+        if label in ["artificial", "fake", "ai-generated", "ai"]:
+            ai_score = float(r["score"])
+        elif label in ["human", "real", "authentic"]:
+            real_score = float(r["score"])
+            
+    # Fallback if only top-1 is returned by the pipeline for some reason
+    if ai_score == 0.0 and real_score > 0.0:
+        ai_score = 1.0 - real_score
+    elif real_score == 0.0 and ai_score > 0.0:
+        real_score = 1.0 - ai_score
+        
     is_ai_generated = real_score < AI_REAL_THRESHOLD
+    
     return {
         "is_ai_generated": is_ai_generated,
         "ai_score":        float(f"{ai_score * 100.0:.1f}"),
