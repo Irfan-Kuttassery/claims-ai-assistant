@@ -28,6 +28,9 @@ ai_detector = pipeline(
     device=-1,
 )
 
+print("🔍 Loading Vehicle Object Detector...")
+object_detector = pipeline("object-detection", device=-1)
+
 print("✅ Models loaded successfully!")
 
 # ──────────────────────────────────────────────
@@ -60,6 +63,12 @@ CLIP_DAMAGED_MIN    = 0.60  # CLIP must say ≥60% damaged to call DAMAGED
 CLIP_UNDAMAGED_MIN  = 0.60  # CLIP must say ≥60% undamaged to call UNDAMAGED
 DMG_TYPE_TIEBREAK   = 0.55  # If CLIP is uncertain, use damage-type model: >55% → DAMAGED
 
+# ──────────────────────────────────────────────
+# Vehicle Detection Thresholds
+# ──────────────────────────────────────────────
+VEHICLE_THRESHOLD = 0.50
+VEHICLE_CLASSES = {"car", "motorcycle", "bus", "truck", "airplane", "boat", "train", "bicycle"}
+
 
 def clip_classify(image: Image.Image):
     inputs = clip_processor(
@@ -81,6 +90,26 @@ def clip_classify(image: Image.Image):
         clip_verdict = "uncertain"
 
     return clip_verdict, damaged_score, undamaged_score, confidence
+
+def detect_vehicle(image: Image.Image):
+    """Uses Object Detection to verify if the image contains any vehicle anywhere."""
+    try:
+        predictions = object_detector(image)
+    except Exception as e:
+        print(f"Object detection failed: {e}")
+        return True, 1.0  # Fallback to true if model fails
+        
+    highest_score = 0.0
+    is_vehicle = False
+    
+    for p in predictions:
+        if p["label"] in VEHICLE_CLASSES:
+            if p["score"] > highest_score:
+                highest_score = float(p["score"])
+            if p["score"] >= VEHICLE_THRESHOLD:
+                is_vehicle = True
+                
+    return is_vehicle, highest_score
 
 
 def detect_ai_image(image: Image.Image):
@@ -158,6 +187,14 @@ def analyze():
         image = Image.open(io.BytesIO(request.files["image"].read())).convert("RGB")
         image = image.resize((224, 224))
 
+        # Step 0 — Vehicle Detection
+        is_vehicle, vehicle_score = detect_vehicle(image)
+        if not is_vehicle:
+            return jsonify({
+                "is_vehicle": False,
+                "vehicle_score": float(f"{vehicle_score * 100.0:.1f}")
+            }), 200
+
         # Step 1 — CLIP binary verdict
         clip_verdict, dam_score, undam_score, confidence = clip_classify(image)
 
@@ -191,6 +228,7 @@ def analyze():
             "is_ai_generated":  ai_info["is_ai_generated"],
             "ai_score":         ai_info["ai_score"],
             "real_score":       ai_info["real_score"],
+            "is_vehicle":       True,
         })
 
     except Exception as e:

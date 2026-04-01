@@ -756,6 +756,21 @@
       const vi = document.getElementById('verdict-icon');
       const vt = document.getElementById('verdict-title');
       const vs = document.getElementById('verdict-sub');
+      const scoresGrid = document.querySelector('.scores-grid');
+
+      if (d.is_vehicle === false) {
+        vc.className = 'verdict-card uncertain';
+        vi.textContent = '🚫';
+        vt.textContent = 'VEHICLE NOT DETECTED';
+        vs.textContent = `Please upload a clear photo of a vehicle. (Detection Confidence: ${d.vehicle_score}%)`;
+        
+        scoresGrid.style.display = 'none';
+        document.getElementById('auth-card').style.display = 'none';
+        document.getElementById('damage-types-card').style.display = 'none';
+        return;
+      }
+      
+      scoresGrid.style.display = 'grid';
 
       const verdict = d.verdict || (d.is_damaged ? 'damaged' : 'undamaged');
 
