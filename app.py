@@ -1,4 +1,7 @@
 import io
+import requests
+import json
+import base64
 from flask import Flask, render_template, request, jsonify  # type: ignore
 from PIL import Image  # type: ignore
 import torch  # type: ignore
@@ -21,12 +24,7 @@ damage_type_classifier = pipeline(
     device=-1,   # CPU; set to 0 for GPU
 )
 
-print("🧠 Loading AI-image detector...")
-ai_detector = pipeline(
-    "image-classification",
-    model="umm-maybe/AI-image-detector",
-    device=-1,
-)
+# 🧠 Swapped to Hive API for deepfake detection instead of local model
 
 print("🔍 Loading Vehicle Object Detector...")
 object_detector = pipeline("object-detection", device=-1)
@@ -113,33 +111,57 @@ def detect_vehicle(image: Image.Image):
 
 
 def detect_ai_image(image: Image.Image):
-    """Uses a dedicated AI-detection pipeline to classify the image."""
-    # top_k=None ensures we get all labels (e.g., both 'artificial' and 'human')
-    results = ai_detector(image, top_k=None)
-    
-    ai_score = 0.0
-    real_score = 0.0
-    
-    for r in results:
-        label = r["label"].lower()
-        if label in ["artificial", "fake", "ai-generated", "ai"]:
-            ai_score = float(r["score"])
-        elif label in ["human", "real", "authentic"]:
-            real_score = float(r["score"])
-            
-    # Fallback if only top-1 is returned by the pipeline for some reason
-    if ai_score == 0.0 and real_score > 0.0:
-        ai_score = 1.0 - real_score
-    elif real_score == 0.0 and ai_score > 0.0:
-        real_score = 1.0 - ai_score
+    """Uses Hive API for Deepfake & AI Generated content detection."""
+    buffered = io.BytesIO()
+    image.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+    headers = {
+        #Use your token here -- Example : 'authorization': 'Bearer wrQW1pImnnU5uAMjtt==',
         
-    is_ai_generated = real_score < AI_REAL_THRESHOLD
-    
-    return {
-        "is_ai_generated": is_ai_generated,
-        "ai_score":        float(f"{ai_score * 100.0:.1f}"),
-        "real_score":      float(f"{real_score * 100.0:.1f}"),
+        'authorization': 'USE YOUR TOKEN HERE',
+        'Content-Type': 'application/json',
     }
+
+    json_data = {
+      "input": [
+        {
+          "media_base64": img_str
+        }
+      ]
+    }
+
+    try:
+        response = requests.post(
+            'https://api.thehive.ai/api/v3/hive/ai-generated-and-deepfake-content-detection',
+            headers=headers,
+            json=json_data
+        )
+        res_json = response.json()
+        
+        # Parse Hive response
+        classes = res_json['output'][0]['classes']
+        ai_score = 0.0
+        
+        for cls in classes:
+            if cls['class'] == 'ai_generated' or cls['class'] == 'yes':
+                ai_score = float(cls.get('score', cls.get('value', 0.0)))
+                break
+                
+        is_ai_generated = ai_score >= AI_REAL_THRESHOLD
+        
+        return {
+            "is_ai_generated": is_ai_generated,
+            "ai_score":        float(f"{ai_score * 100.0:.1f}"),
+            "real_score":      float(f"{(1.0 - ai_score) * 100.0:.1f}"),
+        }
+    except Exception as e:
+        print(f"Hive API Error: {e}")
+        return {
+            "is_ai_generated": False,
+            "ai_score":        0.0,
+            "real_score":      100.0,
+        }
 
 
 # ──────────────────────────────────────────────
