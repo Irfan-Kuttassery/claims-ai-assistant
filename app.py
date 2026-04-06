@@ -15,7 +15,7 @@ app = Flask(__name__)
 print("🚗 Loading car damage detection models...")
 
 clip_model     = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32", use_fast=False)
 clip_model.eval()
 
 damage_type_classifier = pipeline(
@@ -110,16 +110,12 @@ def detect_vehicle(image: Image.Image):
     return is_vehicle, highest_score
 
 
-def detect_ai_image(image: Image.Image):
+def detect_ai_image(image_bytes: bytes):
     """Uses Hive API for Deepfake & AI Generated content detection."""
-    buffered = io.BytesIO()
-    image.save(buffered, format="JPEG")
-    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    img_str = base64.b64encode(image_bytes).decode("utf-8")
 
     headers = {
-        #Use your token here -- Example : 'authorization': 'Bearer wrQW1pImnnU5uAMjtt==',
-        
-        'authorization': 'USE YOUR TOKEN HERE',
+        'authorization': 'Bearer GtCYFYPu3787AI0lmZfqWg==',
         'Content-Type': 'application/json',
     }
 
@@ -132,35 +128,63 @@ def detect_ai_image(image: Image.Image):
     }
 
     try:
+        print("📡 Calling Hive AI Detection API...")
         response = requests.post(
             'https://api.thehive.ai/api/v3/hive/ai-generated-and-deepfake-content-detection',
             headers=headers,
-            json=json_data
+            json=json_data,
+            timeout=30
         )
+        response.raise_for_status()
         res_json = response.json()
         
-        # Parse Hive response
-        classes = res_json['output'][0]['classes']
+        # Hive response usually looks like:
+        # {"output": [{"classes": [{"class": "ai_generated", "score": 0.99}, ...]}]}
+        # or for deepfakes: {"output": [{"classes": [{"class": "yes", "score": 0.99}, ...]}]}
+        
+        output = res_json.get('output', [{}])[0]
+        classes = output.get('classes', [])
+        
         ai_score = 0.0
-        
         for cls in classes:
-            if cls['class'] == 'ai_generated' or cls['class'] == 'yes':
-                ai_score = float(cls.get('score', cls.get('value', 0.0)))
-                break
-                
-        is_ai_generated = ai_score >= AI_REAL_THRESHOLD
+            # We look for 'ai_generated' (for AI Image) or 'yes' (for Deepfake head)
+            if cls['class'] in ['ai_generated', 'yes']:
+                score = float(cls.get('score', cls.get('value', 0.0)))
+                # Keep the highest score among relevant classes
+                if score > ai_score:
+                    ai_score = score
         
+        print(f"📊 Hive API Result: AI Score = {ai_score:.4f}")
+        
+        print(f"📊 Hive API Result: AI Score = {ai_score:.4f}")
+        
+        # Granular Tiered Logic:
+        # > 50%       → "AI Generated"
+        # 20% to 50%  → "Likely AI"
+        # 10% to 20%  → "Likely Real"
+        # < 10%       → "Real"
+        
+        if ai_score > 0.50:
+            verdict = "AI Generated"
+        elif ai_score > 0.20:
+            verdict = "Likely AI"
+        elif ai_score > 0.10:
+            verdict = "Likely Real"
+        else:
+            verdict = "Real"
+            
         return {
-            "is_ai_generated": is_ai_generated,
+            "verdict":         verdict,
             "ai_score":        float(f"{ai_score * 100.0:.1f}"),
             "real_score":      float(f"{(1.0 - ai_score) * 100.0:.1f}"),
         }
     except Exception as e:
-        print(f"Hive API Error: {e}")
+        print(f"❌ Hive API Error: {e}")
         return {
-            "is_ai_generated": False,
+            "verdict":         "Error",
             "ai_score":        0.0,
-            "real_score":      100.0,
+            "real_score":      0.0, 
+            "error":           str(e)
         }
 
 
@@ -206,11 +230,15 @@ def analyze():
         return jsonify({"error": "No image uploaded"}), 400
 
     try:
-        image = Image.open(io.BytesIO(request.files["image"].read())).convert("RGB")
-        image = image.resize((224, 224))
+        image_data = request.files["image"].read()
+        image = Image.open(io.BytesIO(image_data)).convert("RGB")
+        
+        # Keep original bytes for Hive (don't resize)
+        # Resize ONLY for CLIP and local classification models
+        image_resized = image.resize((224, 224))
 
-        # Step 0 — Vehicle Detection
-        is_vehicle, vehicle_score = detect_vehicle(image)
+        # Step 0 — Vehicle Detection (on resized is fine, but can use original)
+        is_vehicle, vehicle_score = detect_vehicle(image_resized)
         if not is_vehicle:
             return jsonify({
                 "is_vehicle": False,
@@ -218,13 +246,13 @@ def analyze():
             }), 200
 
         # Step 1 — CLIP binary verdict
-        clip_verdict, dam_score, undam_score, confidence = clip_classify(image)
+        clip_verdict, dam_score, undam_score, confidence = clip_classify(image_resized)
 
         # Step 2 — Damage-type scores (always run; used as tiebreaker)
-        damage_types, top_dmg_score = classify_damage_type(image)
+        damage_types, top_dmg_score = classify_damage_type(image_resized)
 
-        # Step 3 — AI-generated image detection (reuses CLIP, no extra model)
-        ai_info = detect_ai_image(image)
+        # Step 3 — AI-generated image detection (USES ORIGINAL BYTES)
+        ai_info = detect_ai_image(image_data)
 
         # Step 4 — Ensemble final decision
         if clip_verdict == "damaged":
@@ -247,7 +275,7 @@ def analyze():
             "top_dmg_score":    float(f"{top_dmg_score * 100.0:.1f}"),
             "damage_types":     damage_types if is_damaged else [],
             # AI-generated image detection
-            "is_ai_generated":  ai_info["is_ai_generated"],
+            "ai_verdict":       ai_info["verdict"],
             "ai_score":         ai_info["ai_score"],
             "real_score":       ai_info["real_score"],
             "is_vehicle":       True,

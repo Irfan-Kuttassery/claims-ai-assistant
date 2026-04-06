@@ -548,24 +548,72 @@
       border: 1px solid;
       animation: slideUp 0.4s ease;
     }
+
     .auth-card.real {
-      background: linear-gradient(135deg, rgba(79,247,154,0.12), rgba(79,247,154,0.04));
-      border-color: rgba(79,247,154,0.3);
+      background: linear-gradient(135deg, rgba(79, 247, 154, 0.12), rgba(79, 247, 154, 0.04));
+      border-color: rgba(79, 247, 154, 0.3);
     }
+
     .auth-card.ai-gen {
-      background: linear-gradient(135deg, rgba(247,196,79,0.15), rgba(247,79,106,0.07));
-      border-color: rgba(247,196,79,0.4);
+      background: linear-gradient(135deg, rgba(247, 196, 79, 0.15), rgba(247, 79, 106, 0.07));
+      border-color: rgba(247, 196, 79, 0.4);
     }
-    .auth-icon { font-size: 38px; flex-shrink: 0; }
-    .auth-body { flex: 1; }
-    .auth-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.65; margin-bottom: 4px; }
-    .auth-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .auth-card.real  .auth-title { color: var(--success); }
-    .auth-card.ai-gen .auth-title { color: var(--warn); }
-    .auth-scores { display: flex; gap: 20px; font-size: 13px; color: var(--muted); }
-    .auth-scores span { font-weight: 700; }
-    .auth-card.real  .auth-scores span { color: var(--success); }
-    .auth-card.ai-gen .auth-scores span { color: var(--warn); }
+
+    .auth-card.uncertain {
+      background: linear-gradient(135deg, rgba(247, 196, 79, 0.1), rgba(247, 196, 79, 0.05));
+      border-color: rgba(247, 196, 79, 0.3);
+    }
+
+    .auth-icon {
+      font-size: 38px;
+      flex-shrink: 0;
+    }
+
+    .auth-body {
+      flex: 1;
+    }
+
+    .auth-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.65;
+      margin-bottom: 4px;
+    }
+
+    .auth-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .auth-card.real .auth-title {
+      color: var(--success);
+    }
+
+    .auth-card.ai-gen .auth-title {
+      color: var(--warn);
+    }
+
+    .auth-scores {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .auth-scores span {
+      font-weight: 700;
+    }
+
+    .auth-card.real .auth-scores span {
+      color: var(--success);
+    }
+
+    .auth-card.ai-gen .auth-scores span {
+      color: var(--warn);
+    }
 
     /* ── Footer ── */
     footer {
@@ -763,13 +811,13 @@
         vi.textContent = '🚫';
         vt.textContent = 'VEHICLE NOT DETECTED';
         vs.textContent = `Please upload a clear photo of a vehicle. (Detection Confidence: ${d.vehicle_score}%)`;
-        
+
         scoresGrid.style.display = 'none';
         document.getElementById('auth-card').style.display = 'none';
         document.getElementById('damage-types-card').style.display = 'none';
         return;
       }
-      
+
       scoresGrid.style.display = 'grid';
 
       const verdict = d.verdict || (d.is_damaged ? 'damaged' : 'undamaged');
@@ -800,21 +848,50 @@
       }, 100);
 
       // Image Authenticity card
-      const authCard  = document.getElementById('auth-card');
-      const authIcon  = document.getElementById('auth-icon');
+      const authCard = document.getElementById('auth-card');
+      const authIcon = document.getElementById('auth-icon');
       const authTitle = document.getElementById('auth-title');
+
       if (d.ai_score !== undefined) {
         authCard.style.display = 'flex';
-        document.getElementById('auth-real-score').textContent = d.real_score + '%';
-        document.getElementById('auth-ai-score').textContent   = d.ai_score  + '%';
-        if (d.is_ai_generated) {
+        const realScoreSpan = document.getElementById('auth-real-score');
+        const aiScoreSpan = document.getElementById('auth-ai-score');
+
+        realScoreSpan.textContent = d.real_score + '%';
+        aiScoreSpan.textContent = d.ai_score + '%';
+
+        const verdict = d.ai_verdict; // "AI Generated" | "Likely AI" | "Likely Real" | "Real" | "Error"
+
+        if (verdict === "Error") {
+          authCard.className = 'auth-card uncertain';
+          authIcon.textContent = '❓';
+          authTitle.textContent = 'Authenticity Check Error';
+          realScoreSpan.parentElement.style.display = 'none';
+          aiScoreSpan.parentElement.textContent = 'Error: ' + d.error;
+        } else if (verdict === "AI Generated") {
           authCard.className = 'auth-card ai-gen';
           authIcon.textContent = '🤖';
-          authTitle.textContent = 'AI-Generated Image';
+          authTitle.textContent = 'AI Generated';
+          realScoreSpan.parentElement.style.display = 'block';
+          aiScoreSpan.parentElement.innerHTML = `AI-Generated: <span id="auth-ai-score">${d.ai_score}%</span>`;
+        } else if (verdict === "Likely AI") {
+          authCard.className = 'auth-card ai-gen'; // or a new class if needed
+          authIcon.textContent = '⚠️';
+          authTitle.textContent = 'Likely AI Generated';
+          realScoreSpan.parentElement.style.display = 'block';
+          aiScoreSpan.parentElement.innerHTML = `AI-Generated: <span id="auth-ai-score">${d.ai_score}%</span>`;
+        } else if (verdict === "Likely Real") {
+          authCard.className = 'auth-card real';
+          authIcon.textContent = '📸';
+          authTitle.textContent = 'Likely Real Photograph';
+          realScoreSpan.parentElement.style.display = 'block';
+          aiScoreSpan.parentElement.innerHTML = `AI-Generated: <span id="auth-ai-score">${d.ai_score}%</span>`;
         } else {
           authCard.className = 'auth-card real';
           authIcon.textContent = '📷';
           authTitle.textContent = 'Real Photograph';
+          realScoreSpan.parentElement.style.display = 'block';
+          aiScoreSpan.parentElement.innerHTML = `AI-Generated: <span id="auth-ai-score">${d.ai_score}%</span>`;
         }
       } else {
         authCard.style.display = 'none';
