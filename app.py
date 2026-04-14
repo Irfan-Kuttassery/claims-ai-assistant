@@ -2,6 +2,10 @@ import io
 import requests
 import json
 import base64
+import os
+import smtplib
+import threading
+from email.message import EmailMessage
 from flask import Flask, render_template, request, jsonify  # type: ignore
 from PIL import Image  # type: ignore
 import torch  # type: ignore
@@ -67,6 +71,33 @@ DMG_TYPE_TIEBREAK   = 0.55  # If CLIP is uncertain, use damage-type model: >55% 
 VEHICLE_THRESHOLD = 0.50
 VEHICLE_CLASSES = {"car", "motorcycle", "bus", "truck", "airplane", "boat", "train", "bicycle"}
 
+
+def send_alert_email(verdict, damage_score, ai_verdict, real_score):
+    sender_email = os.environ.get("SENDER_EMAIL", "irfankuttassery713@gmail.com")
+    # For Gmail, you will need an App Password if 2FA is enabled
+    sender_password = os.environ.get("SENDER_PASSWORD", "bnibcbamehpippwp")
+    receiver_email = os.environ.get("RECEIVER_EMAIL", sender_email)
+
+    msg = EmailMessage()
+    msg.set_content(
+        f"Alert: A genuine damaged car was detected!\n\n"
+        f"Verdict: {verdict.capitalize()}\n"
+        f"Damage Confidence: {damage_score}%\n"
+        f"AI Detection Verdict: {ai_verdict}\n"
+        f"Real Photo Confidence: {real_score}%"
+    )
+    msg['Subject'] = 'Car Damage Alert - Real Incident Detected'
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+    except Exception:
+        pass
 
 def clip_classify(image: Image.Image):
     inputs = clip_processor(
@@ -265,6 +296,22 @@ def analyze():
 
         is_damaged = (final_verdict == "damaged")
 
+        # Step 5 — Send Email Alert if Damaged and Real
+        email_dispatched = False
+        if is_damaged and ai_info.get("verdict") in ["Real", "Likely Real"]:
+            email_dispatched = True
+            dam_score_formatted = float(f"{dam_score * 100.0:.1f}") if final_verdict == "damaged" else float(f"{top_dmg_score * 100.0:.1f}")
+            threading.Thread(
+                target=send_alert_email,
+                args=(
+                    final_verdict,
+                    dam_score_formatted,
+                    ai_info["verdict"],
+                    ai_info["real_score"]
+                ),
+                daemon=True
+            ).start()
+
         return jsonify({
             "is_damaged":       is_damaged,       # True / False
             "verdict":          final_verdict,    # "damaged" | "undamaged" | "uncertain"
@@ -279,6 +326,7 @@ def analyze():
             "ai_score":         ai_info["ai_score"],
             "real_score":       ai_info["real_score"],
             "is_vehicle":       True,
+            "email_dispatched": email_dispatched,
         })
 
     except Exception as e:

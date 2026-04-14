@@ -720,6 +720,18 @@
         </div>
       </div>
 
+      <!-- Email Notification -->
+      <div class="auth-card real" id="email-card" style="display:none">
+        <div class="auth-icon" id="email-icon">✉️</div>
+        <div class="auth-body">
+          <div class="auth-label">Notification Sent</div>
+          <div class="auth-title" id="email-title" style="color: var(--accent);">Alert Email Dispatched</div>
+          <div class="auth-scores">
+            <div>An alert has been successfully triggered for this incident.</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Damage types (shown only when damaged) -->
       <div class="damage-types" id="damage-types-card" style="display:none">
         <div class="damage-types-header">⚠️ Damage Type Breakdown</div>
@@ -895,6 +907,12 @@
         }
       } else {
         authCard.style.display = 'none';
+      }
+
+      // Email Notification card
+      const emailCard = document.getElementById('email-card');
+      if (emailCard) {
+        emailCard.style.display = d.email_dispatched ? 'flex' : 'none';
       }
 
       // Damage type breakdown (only when damaged)
