@@ -7,9 +7,9 @@ import smtplib
 import threading
 from email.message import EmailMessage
 from flask import Flask, render_template, request, jsonify  # type: ignore
-from PIL import Image  # type: ignore
+from PIL import Image, ImageChops, ImageEnhance  # type: ignore
 import torch  # type: ignore
-from transformers import pipeline, CLIPProcessor, CLIPModel  # type: ignore
+from transformers import pipeline, CLIPProcessor, CLIPModel, AutoModelForImageClassification, AutoImageProcessor  # type: ignore
 
 app = Flask(__name__)
 
@@ -32,6 +32,13 @@ damage_type_classifier = pipeline(
 
 print("🔍 Loading Vehicle Object Detector...")
 object_detector = pipeline("object-detection", device=-1)
+
+print("🛡️ Loading Forgery Detection Model (ViT)...")
+# Using a ViT model validated for public access
+forgery_model_name = "dima806/ai_vs_real_image_detection"
+forgery_processor = AutoImageProcessor.from_pretrained(forgery_model_name)
+forgery_model = AutoModelForImageClassification.from_pretrained(forgery_model_name)
+forgery_model.eval()
 
 print("✅ Models loaded successfully!")
 
@@ -61,9 +68,9 @@ N_DAMAGED = 5
 AI_REAL_THRESHOLD = 0.50
 
 # Thresholds for ensemble decision
-CLIP_DAMAGED_MIN    = 0.60  # CLIP must say ≥60% damaged to call DAMAGED
-CLIP_UNDAMAGED_MIN  = 0.60  # CLIP must say ≥60% undamaged to call UNDAMAGED
-DMG_TYPE_TIEBREAK   = 0.55  # If CLIP is uncertain, use damage-type model: >55% → DAMAGED
+CLIP_DAMAGED_MIN    = 0.35  # CLIP must say ≥60% damaged to call DAMAGED
+CLIP_UNDAMAGED_MIN  = 0.75  # CLIP must say ≥60% undamaged to call UNDAMAGED
+DMG_TYPE_TIEBREAK   = 0.50  # If CLIP is uncertain, use damage-type model: >55% → DAMAGED
 
 # ──────────────────────────────────────────────
 # Vehicle Detection Thresholds
@@ -248,6 +255,57 @@ def classify_damage_type(image: Image.Image):
 
 
 # ──────────────────────────────────────────────
+# Forgery Detection & ELA
+# ──────────────────────────────────────────────
+def perform_ela(image: Image.Image, quality=90):
+    """Generates Error Level Analysis image highlight differences in compression."""
+    temp_buf = io.BytesIO()
+    image.save(temp_buf, format='JPEG', quality=quality)
+    temp_buf.seek(0)
+    recompressed = Image.open(temp_buf)
+    
+    ela_img = ImageChops.difference(image, recompressed)
+    extrema = ela_img.getextrema()
+    max_diff = max([ex[1] for ex in extrema])
+    if max_diff > 0:
+        scale = 255.0 / max_diff
+        ela_img = ImageEnhance.Brightness(ela_img).enhance(scale)
+    
+    # Convert ELA image to base64 for frontend
+    buffered = io.BytesIO()
+    ela_img.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+def detect_forgery(image: Image.Image):
+    """Uses ViT model to classify image as Authentic or Forgery/Photoshopped."""
+    inputs = forgery_processor(images=image, return_tensors="pt")
+    with torch.no_grad():
+        outputs = forgery_model(**inputs)
+        logits = outputs.logits
+        # Assuming label 0 is Authentic, label 1 is Forgery (typical for dima806)
+        # We'll check the id2label if available, but let's use softmax
+        probs = torch.nn.functional.softmax(logits, dim=-1)[0]
+        
+    # Get labels from model config
+    labels = forgery_model.config.id2label
+    # Find index for 'real' or 'authentic' vs 'fake' or 'forgery'
+    forgery_idx = 1
+    for idx, label in labels.items():
+        if label.lower() in ['fake', 'forgery', 'photoshopped']:
+            forgery_idx = idx
+            break
+            
+    forgery_score = float(probs[forgery_idx])
+    is_forgery = forgery_score > 0.25
+    
+    return {
+        "is_forgery": is_forgery,
+        "forgery_score": float(f"{forgery_score * 100.0:.1f}"),
+        "verdict": "Photoshopped" if is_forgery else "Authentic"
+    }
+
+
+# ──────────────────────────────────────────────
 # Routes
 # ──────────────────────────────────────────────
 @app.route("/")
@@ -284,6 +342,25 @@ def analyze():
 
         # Step 3 — AI-generated image detection (USES ORIGINAL BYTES)
         ai_info = detect_ai_image(image_data)
+
+        # Step 4 — Forgery Detection (Photoshopped)
+        # triggered if Hive says it's real, to catch manual edits
+        forgery_info = {
+            "is_forgery": False,
+            "forgery_score": 0.0,
+            "verdict": "Not Checked",
+            "ela_image": None
+        }
+        
+        if ai_info["verdict"] in ["Real", "Likely Real"]:
+            print("🕵️ HIVE says Real. Running Forgery Detection...")
+            f_res = detect_forgery(image_resized)
+            forgery_info.update(f_res)
+            
+            # Generate ELA if forgery is suspected or as a general forensic clue
+            f_score = float(forgery_info.get("forgery_score", 0))
+            if forgery_info.get("is_forgery") or f_score > 20.0:
+                forgery_info["ela_image"] = perform_ela(image_resized)
 
         # Step 4 — Ensemble final decision
         if clip_verdict == "damaged":
@@ -325,6 +402,11 @@ def analyze():
             "ai_verdict":       ai_info["verdict"],
             "ai_score":         ai_info["ai_score"],
             "real_score":       ai_info["real_score"],
+            # Forgery Detection info
+            "forgery_verdict":  forgery_info["verdict"],
+            "forgery_score":    forgery_info["forgery_score"],
+            "is_forgery":       forgery_info["is_forgery"],
+            "ela_image":        forgery_info["ela_image"],
             "is_vehicle":       True,
             "email_dispatched": email_dispatched,
         })
